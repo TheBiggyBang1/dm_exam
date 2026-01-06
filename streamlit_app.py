@@ -529,26 +529,30 @@ with tab_interpret:
     st.subheader('Clustering (brief)')
     st.markdown('- **KMeans:** segments customers by frequency and spend; centers summarize typical profiles.\n- **DBSCAN:** finds dense regions and labels sparse customers as noise (noise % reports dispersion).')
 
-    st.subheader('Results interpretation — accuracy & business assumptions')
+    st.subheader('Results and practical implications')
     if 'model_comparison' in st.session_state:
         comp_df = pd.DataFrame.from_dict(st.session_state['model_comparison'], orient='index')
         comp_df = comp_df[['accuracy','precision_macro','recall_macro','f1_macro']]
-        # show concise numbers then interpret
         st.dataframe(comp_df.style.format({"accuracy":"{:.3f}","precision_macro":"{:.3f}","recall_macro":"{:.3f}","f1_macro":"{:.3f}"}))
         st.bar_chart(comp_df['f1_macro'])
         best_model = comp_df['f1_macro'].idxmax()
         best_score = comp_df['f1_macro'].max()
         mean_acc = comp_df['accuracy'].mean()
         acc_min, acc_max = float(comp_df['accuracy'].min()), float(comp_df['accuracy'].max())
-        st.markdown(f"**Interpretation:** The top model (**{best_model}**) achieves test F1 (macro) = **{best_score:.3f}**. Across candidates the mean accuracy is **{mean_acc:.3f}** (range {acc_min:.3f}–{acc_max:.3f}), i.e., a typical tertile prediction is correct about **{mean_acc*100:.0f}%** of the time.")
-        st.markdown(
-            "- **Business implication:** Use predicted tertiles to prioritize customers (e.g., focus marketing spend on predicted-high spenders), but treat predictions as a prioritization signal — validate with A/B tests because a non-zero share will be misclassified.")
-        st.markdown(
-            "- **Practical guidance:** Prefer models with higher **macro F1** when you need balanced performance across low/medium/high segments; if false positives or negatives have asymmetric costs, inspect per-class precision/recall before picking a model.")
-        st.markdown(
-            "- **Assumptions for future use:** (1) customer behavior and labeling remain reasonably stable over time; (2) training data is representative of future customers; (3) features used (spend, frequency, entropy) remain informative. If these fail, retrain regularly and add recency/category features to improve accuracy.")
+
+        st.markdown(f"**Summary:** The best model is **{best_model}** (test macro F1 = **{best_score:.3f}**). The models have a mean accuracy of **{mean_acc:.3f}** (range {acc_min:.3f}–{acc_max:.3f}), which means a typical tertile prediction is correct about **{mean_acc*100:.0f}%** of the time.")
+
+        st.markdown("**What this means in practice**")
+        st.markdown("- Use predictions to prioritize actions (for example, target predicted-high spenders for retention or upsell). Treat these predictions as *signals*, not certain labels — validate with experiments (A/B tests) before scaling.")
+        st.markdown("- Expect misclassification, especially for customers near the tertile boundaries; consider using predicted probabilities or calibrated thresholds if costs differ across errors.")
+        st.markdown("- If your business penalizes false positives more than false negatives (or vice versa), inspect per-class precision/recall and choose the model that minimizes the relevant cost.")
+
+        st.markdown("**Assumptions and recommended next steps**")
+        st.markdown("- The analysis assumes past behavior is representative of future behavior; monitor for concept drift and retrain periodically.")
+        st.markdown("- Adding recency, category, and time-based features is likely to improve predictions.")
+        st.markdown("- If a continuous estimate is needed, consider modeling `SumExp` directly (regression) instead of tertiles.")
     else:
-        st.info('Run the Classification tab to generate the model comparison table and see interpretation notes.')
+        st.info('Run the Classification tab to generate the model comparison table and view these notes.')
 
     st.subheader('Final takeaways & actions')
     if 'rf_cv_summary' in st.session_state:
